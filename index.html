@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Absensi Siswa</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo" aria-hidden="true">A</span>
+    <div><b id="schoolName">Nama Sekolah</b><small>Absensi kehadiran siswa</small></div></div>
+  <nav aria-label="Menu utama">
+    <a href="#scan" data-r="scan">Scan</a>
+    <a href="#dashboard" data-r="dashboard">Dashboard</a>
+    <a href="#siswa" data-r="siswa">Siswa</a>
+  </nav>
+</header>
+
+<main>
+<section class="view" id="v-scan">
+  <div class="scan-grid">
+    <div class="board">
+      <div class="clock" id="clk">--:--:--</div>
+      <div class="date" id="dt"></div>
+      <h1>Silakan Scan Kartu Siswa</h1>
+      <p>Arahkan barcode pada kartu ke scanner.</p>
+      <input id="bc" autocomplete="off" inputmode="none" placeholder="Menunggu pemindaian…" aria-label="Kolom barcode">
+      <div class="board-foot">
+        <span class="counter"><b id="cnt">0</b> siswa sudah absen hari ini</span>
+        <button id="sim" class="btn light" type="button">Simulasi scan</button>
+      </div>
+    </div>
+    <div class="result idle" id="res" aria-live="polite">
+      <div class="r-icon" id="rIcon">⌁</div>
+      <div class="r-title" id="rTitle">Siap memindai</div>
+      <div class="r-name" id="rName"></div>
+      <div class="r-meta" id="rMeta">Hasil pemindaian akan tampil di sini.</div>
+    </div>
+  </div>
+  <div class="panel"><h2>Scan terakhir</h2><ul class="recent" id="recent"></ul></div>
+</section>
+
+<section class="view" id="v-dashboard">
+  <div class="head"><h1>Dashboard operator</h1>
+    <div class="actions"><a class="btn" href="#scan">Buka halaman scan</a><a class="btn ghost" href="#siswa">Kelola siswa</a></div></div>
+  <div class="stats">
+    <div class="stat"><span>Jumlah siswa</span><b id="sTotal">0</b></div>
+    <div class="stat ok"><span>Sudah hadir</span><b id="sHadir">0</b></div>
+    <div class="stat no"><span>Belum hadir</span><b id="sBelum">0</b></div>
+    <div class="stat"><span>Persentase kehadiran</span><b id="sPct">0%</b><i class="bar"><u id="sBar"></u></i></div>
+  </div>
+  <div class="panel">
+    <div class="filters">
+      <label>Cari<input id="fQ" type="search" placeholder="Nama atau NIS"></label>
+      <label>Kelas<select id="fKelas"></select></label>
+      <label>Tanggal<input id="fTgl" type="date"></label>
+      <button class="btn ghost" id="fAll" type="button">Semua tanggal</button>
+    </div>
+    <div class="twrap"><table>
+      <thead><tr><th>Tanggal</th><th>Jam</th><th>NIS</th><th>Nama</th><th>Kelas</th><th>Status</th></tr></thead>
+      <tbody id="tbRiwayat"></tbody></table></div>
+  </div>
+</section>
+
+<section class="view" id="v-siswa">
+  <div class="head"><h1>Manajemen siswa</h1>
+    <div class="actions"><button class="btn" id="add" type="button">Tambah siswa</button>
+      <button class="btn ghost" id="reset" type="button">Reset data contoh</button></div></div>
+  <div class="panel">
+    <div class="filters"><label>Cari<input id="sQ" type="search" placeholder="Nama, NIS, atau kelas"></label></div>
+    <div class="twrap"><table>
+      <thead><tr><th>NIS (isi barcode)</th><th>Nama</th><th>Kelas</th><th class="r">Aksi</th></tr></thead>
+      <tbody id="tbSiswa"></tbody></table></div>
+  </div>
+  <p class="note">Data prototipe tersimpan di localStorage browser ini saja, bukan di server. Untuk dipakai di banyak perangkat, data perlu dipindah ke database.</p>
+</section>
+</main>
+
+<dialog id="dlg">
+  <form method="dialog" id="frm">
+    <h2 id="dTitle">Tambah siswa</h2>
+    <label>NIS<input id="fNis" required maxlength="20" pattern="[A-Za-z0-9\-]+" title="Huruf, angka, atau tanda hubung"></label>
+    <label>Nama lengkap<input id="fNama" required maxlength="60"></label>
+    <label>Kelas<input id="fKls" required maxlength="10" list="klsList" placeholder="mis. X-1"><datalist id="klsList"></datalist></label>
+    <p class="err" id="dErr"></p>
+    <div class="actions"><button class="btn ghost" value="cancel" formnovalidate>Batal</button><button class="btn" id="dOk" value="ok">Simpan siswa</button></div>
+  </form>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+<script src="script.js"></script>
+</body>
+</html>
