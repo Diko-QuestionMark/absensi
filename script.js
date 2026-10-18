@@ -191,6 +191,48 @@ function renderDash() {
 ['#fQ', '#fKelas', '#fTgl'].forEach(id => $(id).addEventListener('input', renderDash));
 $('#fAll').addEventListener('click', () => { $('#fTgl').value = ''; renderDash(); });
 
+function exportExcel() {
+  const tgl = $('#fTgl').value;
+  const kelas = $('#fKelas').value;
+  const q = $('#fQ').value.trim().toLowerCase();
+  const rows = records.filter(r => (!tgl || r.tgl === tgl) && (!kelas || r.kelas === kelas) &&
+    (!q || r.nama.toLowerCase().includes(q) || r.nis.toLowerCase().includes(q)))
+    .sort((a, b) => (b.tgl + b.jam).localeCompare(a.tgl + a.jam));
+
+  if (!rows.length) {
+    alert('Tidak ada data absensi untuk diekspor!');
+    return;
+  }
+
+  const headers = ['No', 'Tanggal', 'Jam', 'NIS', 'Nama Siswa', 'Kelas', 'Status Kehadiran'];
+  const csvContent = [
+    headers.join(','),
+    ...rows.map((r, i) => [
+      i + 1,
+      `"${r.tgl}"`,
+      `"${r.jam}"`,
+      `"${r.nis}"`,
+      `"${r.nama.replace(/"/g, '""')}"`,
+      `"${r.kelas}"`,
+      `"${formatStatus(r.jam, r.status)}"`
+    ].join(','))
+  ].join('\r\n');
+
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const tglName = tgl || today();
+  const klsName = kelas ? `_${kelas}` : '';
+  a.href = url;
+  a.download = `Rekap_Absensi_YPK_${tglName}${klsName}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Data absensi berhasil diunduh ke Excel (.csv)');
+}
+$('#btnExport').addEventListener('click', exportExcel);
+
 /* ===== Manajemen siswa ===== */
 let editNis = null;
 function fillSiswaKelas() {

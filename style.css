@@ -594,17 +594,23 @@ dialog .actions {
   position: fixed;
   left: 50%;
   bottom: 1.2rem;
-  transform: translateX(-50%);
-  display: none;
+  transform: translate(-50%, 8px);
+  opacity: 0;
+  visibility: hidden;
   background: var(--primary);
   color: #fff;
   padding: .7rem 1.2rem;
   border-radius: .5rem;
-  z-index: 9
+  z-index: 9;
+  transition: opacity .2s ease, transform .2s ease, visibility .2s;
+  pointer-events: none;
 }
 
 .toast.on {
-  display: block
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
 }
 
 @media(max-width:820px) {
