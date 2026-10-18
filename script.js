@@ -1,12 +1,12 @@
 /* ===== Pengaturan (mudah diganti) ===== */
-const NAMA_SEKOLAH = 'SMA Contoh Negeri 1';
+const NAMA_SEKOLAH = 'SMA YPK AIR KENANGA';
 const JAM_MASUK = '07:15:00'; // scan setelah jam ini berstatus "Terlambat"
 
 /* ===== Penyimpanan (localStorage, hanya untuk prototipe) ===== */
 const KEY = { s: 'absensi_siswa', r: 'absensi_catatan' };
 const $ = s => document.querySelector(s);
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
-const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
 const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 function seed() {
@@ -14,10 +14,12 @@ function seed() {
   const belakang = ['Pratama', 'Wijaya', 'Lestari', 'Saputra', 'Hidayat', 'Kurnia', 'Permata', 'Santoso'];
   const kelas = ['X-1', 'X-2', 'X-3', 'XI-1', 'XI-2', 'XI-3', 'XI-4', 'XII-1', 'XII-2', 'XII-3'];
   const out = [];
-  kelas.forEach((k, ci) => { for (let j = 0; j < 6; j++) {
-    const i = ci * 6 + j;
-    out.push({ nis: '2026' + String(i + 1).padStart(3, '0'), nama: depan[i % 20] + ' ' + belakang[(i * 7 + ci) % 8], kelas: k });
-  } });
+  kelas.forEach((k, ci) => {
+    for (let j = 0; j < 6; j++) {
+      const i = ci * 6 + j;
+      out.push({ nis: '2026' + String(i + 1).padStart(3, '0'), nama: depan[i % 20] + ' ' + belakang[(i * 7 + ci) % 8], kelas: k });
+    }
+  });
   return out;
 }
 
@@ -34,6 +36,21 @@ const today = () => tglStr(new Date());
 const tglId = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); };
 const kelasSort = (a, b) => a.localeCompare(b, 'id', { numeric: true });
 
+function formatStatus(jam, status) {
+  if (status !== 'Terlambat') return status;
+  const [h1, m1, s1] = jam.split(':').map(Number);
+  const [h2, m2, s2] = JAM_MASUK.split(':').map(Number);
+  const diff = (h1 * 3600 + m1 * 60 + (s1 || 0)) - (h2 * 3600 + m2 * 60 + (s2 || 0));
+  if (diff <= 0) return 'Terlambat';
+  const menit = Math.floor(diff / 60);
+  if (menit < 1) return 'Terlambat < 1 menit';
+  if (menit >= 60) {
+    const j = Math.floor(menit / 60), m = menit % 60;
+    return m > 0 ? `Terlambat ${j} jam ${m} menit` : `Terlambat ${j} jam`;
+  }
+  return `Terlambat ${menit} menit`;
+}
+
 function tick() {
   const n = new Date();
   $('#clk').textContent = jamStr(n);
@@ -44,13 +61,46 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
 
 /* ===== Halaman scan ===== */
 let audioCtx;
-function beep(ok) {
+function playSound(type) {
   try {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-    o.frequency.value = ok ? 880 : 200; o.type = ok ? 'sine' : 'square'; g.gain.value = .08;
-    o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + (ok ? .12 : .35));
-  } catch (e) {}
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const now = audioCtx.currentTime;
+
+    if (type === 'hadir') {
+      // 🔔 Suara "Ting!" jernih mirip lonceng kasir / scanner minimarket (nada naik C6 -> E6)
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(1046.5, now);
+      o.frequency.exponentialRampToValueAtTime(1318.5, now + 0.05);
+      g.gain.setValueAtTime(0.3, now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(now); o.stop(now + 0.35);
+
+    } else if (type === 'late') {
+      // ⚠️ Suara "Bip-Bip!" (dua nada peringatan keterlambatan)
+      [0, 0.12].forEach(offset => {
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(659.25, now + offset); // nada E5
+        g.gain.setValueAtTime(0.25, now + offset);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.08);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(now + offset); o.stop(now + offset + 0.08);
+      });
+
+    } else {
+      // ❌ Suara "Tet!" rendah khas peringatan / kartu salah / duplikat
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(180, now);
+      g.gain.setValueAtTime(0.25, now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(now); o.stop(now + 0.28);
+    }
+  } catch (e) { }
 }
 
 let idleTimer;
@@ -69,19 +119,19 @@ function doScan(raw) {
   const now = new Date(), tgl = tglStr(now), jam = jamStr(now);
   const s = students.find(x => x.nis === code);
   if (!s) {
-    beep(false);
+    playSound('error');
     showResult('err', '✕', 'Kartu tidak dikenali', code, 'Barcode tidak terdaftar. Hubungi petugas untuk memeriksa data siswa.');
   } else {
     const prev = records.find(r => r.nis === code && r.tgl === tgl);
     if (prev) {
-      beep(false);
+      playSound('error');
       showResult('dup', '!', 'Sudah absen hari ini', s.nama, 'Kelas ' + s.kelas + ' · tercatat pukul ' + prev.jam);
     } else {
       const status = jam > JAM_MASUK ? 'Terlambat' : 'Hadir';
       records.push({ nis: s.nis, nama: s.nama, kelas: s.kelas, tgl, jam, status });
       save(KEY.r, records);
-      beep(true);
-      showResult(status === 'Hadir' ? 'ok' : 'late', '✓', 'Absensi berhasil', s.nama, 'Kelas ' + s.kelas + ' · pukul ' + jam + ' · ' + status);
+      playSound(status === 'Hadir' ? 'hadir' : 'late');
+      showResult(status === 'Hadir' ? 'ok' : 'late', '✓', 'Absensi berhasil', s.nama, 'Kelas ' + s.kelas + ' · pukul ' + jam + ' · ' + formatStatus(jam, status));
     }
   }
   renderScan();
@@ -91,9 +141,9 @@ function renderScan() {
   const t = today();
   const todayRec = records.filter(r => r.tgl === t);
   $('#cnt').textContent = new Set(todayRec.map(r => r.nis)).size;
-  const last = todayRec.slice(-5).reverse();
+  const last = [...todayRec].reverse();
   $('#recent').innerHTML = last.length
-    ? last.map(r => `<li><span><b>${esc(r.nama)}</b> <span class="e">${esc(r.kelas)}</span></span><span>${r.jam} · ${r.status}</span></li>`).join('')
+    ? last.map((r, i) => `<li><span><span class="r-num">${i + 1}.</span> <b>${esc(r.nama)}</b> <span class="e">${esc(r.kelas)}</span></span><span>${r.jam} · <b class="${r.status === 'Hadir' ? 'c-ok' : 'c-late'}">${formatStatus(r.jam, r.status)}</b></span></li>`).join('')
     : '<li class="e">Belum ada siswa yang scan hari ini.</li>';
 }
 
@@ -135,23 +185,33 @@ function renderDash() {
     (!q || r.nama.toLowerCase().includes(q) || r.nis.toLowerCase().includes(q)))
     .sort((a, b) => (b.tgl + b.jam).localeCompare(a.tgl + a.jam));
   $('#tbRiwayat').innerHTML = rows.length
-    ? rows.map(r => `<tr><td>${tglId(r.tgl)}</td><td>${r.jam}</td><td>${esc(r.nis)}</td><td>${esc(r.nama)}</td><td>${esc(r.kelas)}</td><td><span class="tag ${r.status === 'Hadir' ? 'h' : 't'}">${r.status}</span></td></tr>`).join('')
-    : '<tr><td class="empty" colspan="6">Tidak ada catatan absensi untuk filter ini.</td></tr>';
+    ? rows.map((r, i) => `<tr><td>${i + 1}</td><td class="c">${tglId(r.tgl)}</td><td class="c">${r.jam}</td><td class="c">${esc(r.nis)}</td><td>${esc(r.nama)}</td><td class="c">${esc(r.kelas)}</td><td class="c"><span class="tag ${r.status === 'Hadir' ? 'h' : 't'}">${formatStatus(r.jam, r.status)}</span></td></tr>`).join('')
+    : '<tr><td class="empty" colspan="7">Tidak ada catatan absensi untuk filter ini.</td></tr>';
 }
 ['#fQ', '#fKelas', '#fTgl'].forEach(id => $(id).addEventListener('input', renderDash));
 $('#fAll').addEventListener('click', () => { $('#fTgl').value = ''; renderDash(); });
 
 /* ===== Manajemen siswa ===== */
 let editNis = null;
+function fillSiswaKelas() {
+  const sel = $('#sKelas'), cur = sel.value;
+  const list = [...new Set(students.map(s => s.kelas))].sort(kelasSort);
+  sel.innerHTML = '<option value="">Semua kelas</option>' + list.map(k => `<option>${esc(k)}</option>`).join('');
+  if (list.includes(cur)) sel.value = cur;
+}
 function renderSiswa() {
+  fillSiswaKelas();
   const q = $('#sQ').value.trim().toLowerCase();
-  const rows = students.filter(s => !q || (s.nis + ' ' + s.nama + ' ' + s.kelas).toLowerCase().includes(q))
+  const kelas = $('#sKelas').value;
+  const rows = students
+    .filter(s => (!kelas || s.kelas === kelas) && (!q || (s.nis + ' ' + s.nama).toLowerCase().includes(q)))
     .sort((a, b) => kelasSort(a.kelas, b.kelas) || a.nama.localeCompare(b.nama));
   $('#tbSiswa').innerHTML = rows.length
-    ? rows.map(s => `<tr><td>${esc(s.nis)}</td><td>${esc(s.nama)}</td><td>${esc(s.kelas)}</td><td class="r"><button class="btn ghost sm" data-e="${esc(s.nis)}">Edit</button> <button class="btn del sm" data-d="${esc(s.nis)}">Hapus</button></td></tr>`).join('')
-    : '<tr><td class="empty" colspan="4">Belum ada siswa. Klik "Tambah siswa" untuk memulai.</td></tr>';
+    ? rows.map((s, i) => `<tr><td>${i + 1}</td><td class="c">${esc(s.nis)}</td><td>${esc(s.nama)}</td><td class="c">${esc(s.kelas)}</td><td class="r"><button class="btn ghost sm" data-e="${esc(s.nis)}">Edit</button> <button class="btn del sm" data-d="${esc(s.nis)}">Hapus</button></td></tr>`).join('')
+    : '<tr><td class="empty" colspan="5">Tidak ada siswa untuk filter ini.</td></tr>';
 }
 $('#sQ').addEventListener('input', renderSiswa);
+$('#sKelas').addEventListener('change', renderSiswa);
 
 function openForm(nis) {
   editNis = nis;

@@ -4,12 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Absensi Siswa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="top">
-  <div class="brand"><span class="logo" aria-hidden="true">A</span>
-    <div><b id="schoolName">Nama Sekolah</b><small>Absensi kehadiran siswa</small></div></div>
+  <div class="brand">
+    <img src="YPK.png" alt="Logo YPK Air Kenanga" class="school-logo">
+    <div><b id="schoolName">Nama Sekolah</b><small>Absensi kehadiran siswa</small></div>
+  </div>
   <nav aria-label="Menu utama">
     <a href="#scan" data-r="scan">Scan</a>
     <a href="#dashboard" data-r="dashboard">Dashboard</a>
@@ -42,8 +47,7 @@
 </section>
 
 <section class="view" id="v-dashboard">
-  <div class="head"><h1>Dashboard operator</h1>
-    <div class="actions"><a class="btn" href="#scan">Buka halaman scan</a><a class="btn ghost" href="#siswa">Kelola siswa</a></div></div>
+  <div class="head"><h1>Dashboard operator</h1></div>
   <div class="stats">
     <div class="stat"><span>Jumlah siswa</span><b id="sTotal">0</b></div>
     <div class="stat ok"><span>Sudah hadir</span><b id="sHadir">0</b></div>
@@ -58,7 +62,7 @@
       <button class="btn ghost" id="fAll" type="button">Semua tanggal</button>
     </div>
     <div class="twrap"><table>
-      <thead><tr><th>Tanggal</th><th>Jam</th><th>NIS</th><th>Nama</th><th>Kelas</th><th>Status</th></tr></thead>
+      <thead><tr><th>No</th><th class="c">Tanggal</th><th class="c">Jam</th><th class="c">NIS</th><th>Nama</th><th class="c">Kelas</th><th class="c">Status</th></tr></thead>
       <tbody id="tbRiwayat"></tbody></table></div>
   </div>
 </section>
@@ -68,9 +72,9 @@
     <div class="actions"><button class="btn" id="add" type="button">Tambah siswa</button>
       <button class="btn ghost" id="reset" type="button">Reset data contoh</button></div></div>
   <div class="panel">
-    <div class="filters"><label>Cari<input id="sQ" type="search" placeholder="Nama, NIS, atau kelas"></label></div>
+    <div class="filters"><label>Cari<input id="sQ" type="search" placeholder="Nama atau NIS"></label><label>Kelas<select id="sKelas"></select></label></div>
     <div class="twrap"><table>
-      <thead><tr><th>NIS (isi barcode)</th><th>Nama</th><th>Kelas</th><th class="r">Aksi</th></tr></thead>
+      <thead><tr><th>No</th><th class="c">NIS (isi barcode)</th><th>Nama</th><th class="c">Kelas</th><th class="r">Aksi</th></tr></thead>
       <tbody id="tbSiswa"></tbody></table></div>
   </div>
   <p class="note">Data prototipe tersimpan di localStorage browser ini saja, bukan di server. Untuk dipakai di banyak perangkat, data perlu dipindah ke database.</p>
