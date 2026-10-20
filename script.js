@@ -196,40 +196,129 @@ function exportExcel() {
   const kelas = $('#fKelas').value;
   const q = $('#fQ').value.trim().toLowerCase();
   const rows = records.filter(r => (!tgl || r.tgl === tgl) && (!kelas || r.kelas === kelas) &&
-    (!q || r.nama.toLowerCase().includes(q) || r.nis.toLowerCase().includes(q)))
-    .sort((a, b) => (b.tgl + b.jam).localeCompare(a.tgl + a.jam));
+    (!q || r.nama.toLowerCase().includes(q) || r.nis.toLowerCase().includes(q)));
 
   if (!rows.length) {
     alert('Tidak ada data absensi untuk diekspor!');
     return;
   }
 
+  // Ambil daftar kelas unik dari data yang difilter dan urutkan
+  const listKelas = [...new Set(rows.map(r => r.kelas))].sort(kelasSort);
   const headers = ['No', 'Tanggal', 'Jam', 'NIS', 'Nama Siswa', 'Kelas', 'Status Kehadiran'];
-  const csvContent = [
-    headers.join(','),
-    ...rows.map((r, i) => [
-      i + 1,
-      `"${r.tgl}"`,
-      `"${r.jam}"`,
-      `"${r.nis}"`,
-      `"${r.nama.replace(/"/g, '""')}"`,
-      `"${r.kelas}"`,
-      `"${formatStatus(r.jam, r.status)}"`
-    ].join(','))
-  ].join('\r\n');
+  const tglName = tgl || today();
+  const klsName = kelas ? `_${kelas}` : '';
+  const fileName = `Rekap_Absensi_YPK_${tglName}${klsName}.xlsx`;
 
+  if (window.XLSX) {
+    const aoa = [];
+    const merges = [];
+    const titleRowIndices = [];
+
+    listKelas.forEach((k, idx) => {
+      const classRows = rows
+        .filter(r => r.kelas === k)
+        .sort((a, b) => (a.tgl + a.jam).localeCompare(b.tgl + b.jam) || a.nama.localeCompare(b.nama));
+
+      if (idx > 0) {
+        aoa.push([]); // baris kosong pemisah antar tabel
+        aoa.push([]);
+      }
+
+      // Baris judul tabel kelas di-merge dari kolom A sampai G (indeks 0 sampai 6)
+      const titleRowIndex = aoa.length;
+      titleRowIndices.push(titleRowIndex);
+      merges.push({ s: { r: titleRowIndex, c: 0 }, e: { r: titleRowIndex, c: 6 } });
+
+      aoa.push([`TABEL ABSENSI KELAS: ${k}`]);
+      aoa.push(headers);
+      classRows.forEach((r, i) => {
+        aoa.push([
+          i + 1,
+          r.tgl,
+          r.jam,
+          r.nis,
+          r.nama,
+          r.kelas,
+          formatStatus(r.jam, r.status)
+        ]);
+      });
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+    // Terapkan merge cell pada setiap baris judul tabel kelas (A - G)
+    ws['!merges'] = merges;
+
+    // Buat judul tiap tabel kelas berada tepat di tengah (center)
+    titleRowIndices.forEach(rIdx => {
+      const cellRef = XLSX.utils.encode_cell({ r: rIdx, c: 0 });
+      if (ws[cellRef]) {
+        ws[cellRef].s = {
+          alignment: {
+            horizontal: 'center',
+            vertical: 'center'
+          },
+          font: {
+            bold: true
+          }
+        };
+      }
+    });
+
+    // Atur lebar kolom yang rapi dan profesional
+    ws['!cols'] = [
+      { wch: 6 },  // No
+      { wch: 14 }, // Tanggal
+      { wch: 10 }, // Jam
+      { wch: 14 }, // NIS
+      { wch: 28 }, // Nama Siswa
+      { wch: 10 }, // Kelas
+      { wch: 24 }  // Status Kehadiran
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Rekap Absensi');
+    XLSX.writeFile(wb, fileName);
+    toast('Data absensi per kelas berhasil diunduh ke Excel (.xlsx)');
+    return;
+  }
+
+  // Cadangan jika XLSX tidak tersedia
+  const sections = [];
+  listKelas.forEach(k => {
+    const classRows = rows
+      .filter(r => r.kelas === k)
+      .sort((a, b) => (a.tgl + a.jam).localeCompare(b.tgl + b.jam) || a.nama.localeCompare(b.nama));
+
+    const lines = [
+      `"TABEL ABSENSI KELAS: ${k.replace(/"/g, '""')}"`,
+      headers.join(','),
+      ...classRows.map((r, i) => [
+        i + 1,
+        `"${r.tgl}"`,
+        `"${r.jam}"`,
+        `"${r.nis}"`,
+        `"${r.nama.replace(/"/g, '""')}"`,
+        `"${r.kelas}"`,
+        `"${formatStatus(r.jam, r.status)}"`
+      ].join(','))
+    ];
+
+    sections.push(lines.join('\r\n'));
+  });
+
+  const csvContent = sections.join('\r\n\r\n\r\n');
   const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const tglName = tgl || today();
-  const klsName = kelas ? `_${kelas}` : '';
   a.href = url;
   a.download = `Rekap_Absensi_YPK_${tglName}${klsName}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  toast('Data absensi berhasil diunduh ke Excel (.csv)');
+  toast('Data absensi per kelas berhasil diunduh ke Excel (.csv)');
 }
 $('#btnExport').addEventListener('click', exportExcel);
 
