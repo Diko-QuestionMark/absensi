@@ -68,7 +68,6 @@ function playSound(type) {
     const now = audioCtx.currentTime;
 
     if (type === 'hadir') {
-      // 🔔 Suara "Ting!" jernih mirip lonceng kasir / scanner minimarket (nada naik C6 -> E6)
       const o = audioCtx.createOscillator(), g = audioCtx.createGain();
       o.type = 'sine';
       o.frequency.setValueAtTime(1046.5, now);
@@ -79,7 +78,6 @@ function playSound(type) {
       o.start(now); o.stop(now + 0.35);
 
     } else if (type === 'late') {
-      // ⚠️ Suara "Bip-Bip!" (dua nada peringatan keterlambatan)
       [0, 0.12].forEach(offset => {
         const o = audioCtx.createOscillator(), g = audioCtx.createGain();
         o.type = 'sine';
@@ -91,7 +89,6 @@ function playSound(type) {
       });
 
     } else {
-      // ❌ Suara "Tet!" rendah khas peringatan / kartu salah / duplikat
       const o = audioCtx.createOscillator(), g = audioCtx.createGain();
       o.type = 'sawtooth';
       o.frequency.setValueAtTime(180, now);
@@ -181,30 +178,45 @@ function renderDash() {
   $('#sTotal').textContent = total; $('#sHadir').textContent = hadir; $('#sBelum').textContent = total - hadir;
   const pct = total ? Math.round(hadir / total * 100) : 0;
   $('#sPct').textContent = pct + '%'; $('#sBar').style.width = pct + '%';
+
+  // Tabel Riwayat Scan (Hadir & Terlambat)
   const rows = records.filter(r => (!tgl || r.tgl === tgl) && (!kelas || r.kelas === kelas) &&
     (!q || r.nama.toLowerCase().includes(q) || r.nis.toLowerCase().includes(q)))
     .sort((a, b) => (b.tgl + b.jam).localeCompare(a.tgl + a.jam));
   $('#tbRiwayat').innerHTML = rows.length
     ? rows.map((r, i) => `<tr><td>${i + 1}</td><td class="c">${tglId(r.tgl)}</td><td class="c">${r.jam}</td><td class="c">${esc(r.nis)}</td><td>${esc(r.nama)}</td><td class="c">${esc(r.kelas)}</td><td class="c"><span class="tag ${r.status === 'Hadir' ? 'h' : 't'}">${formatStatus(r.jam, r.status)}</span></td></tr>`).join('')
     : '<tr><td class="empty" colspan="7">Tidak ada catatan absensi untuk filter ini.</td></tr>';
+
+  // Tabel Siswa Belum Hadir di Bagian Paling Bawah
+  const belumRows = students
+    .filter(s => inK(s) && !hadirSet.has(s.nis) && (!q || s.nama.toLowerCase().includes(q) || s.nis.toLowerCase().includes(q)))
+    .sort((a, b) => kelasSort(a.kelas, b.kelas) || a.nama.localeCompare(b.nama));
+  $('#cBelum').textContent = belumRows.length;
+  $('#tbBelum').innerHTML = belumRows.length
+    ? belumRows.map((s, i) => `<tr><td>${i + 1}</td><td class="c">${esc(s.nis)}</td><td>${esc(s.nama)}</td><td class="c">${esc(s.kelas)}</td><td class="c"><span class="tag b">Belum Hadir</span></td></tr>`).join('')
+    : '<tr><td class="empty" colspan="5">Semua siswa sudah hadir.</td></tr>';
 }
 ['#fQ', '#fKelas', '#fTgl'].forEach(id => $(id).addEventListener('input', renderDash));
 $('#fAll').addEventListener('click', () => { $('#fTgl').value = ''; renderDash(); });
 
 function exportExcel() {
   const tgl = $('#fTgl').value;
+  const tAktif = tgl || today();
   const kelas = $('#fKelas').value;
   const q = $('#fQ').value.trim().toLowerCase();
-  const rows = records.filter(r => (!tgl || r.tgl === tgl) && (!kelas || r.kelas === kelas) &&
-    (!q || r.nama.toLowerCase().includes(q) || r.nis.toLowerCase().includes(q)));
+  const inK = s => !kelas || s.kelas === kelas;
 
-  if (!rows.length) {
-    alert('Tidak ada data absensi untuk diekspor!');
+  // Ambil daftar siswa berdasarkan filter kelas dan pencarian
+  const filteredStudents = students.filter(s => inK(s) &&
+    (!q || s.nama.toLowerCase().includes(q) || s.nis.toLowerCase().includes(q)));
+
+  if (!filteredStudents.length) {
+    alert('Tidak ada data siswa untuk diekspor!');
     return;
   }
 
-  // Ambil daftar kelas unik dari data yang difilter dan urutkan
-  const listKelas = [...new Set(rows.map(r => r.kelas))].sort(kelasSort);
+  // Ambil daftar kelas unik dari data siswa yang difilter dan urutkan
+  const listKelas = [...new Set(filteredStudents.map(s => s.kelas))].sort(kelasSort);
   const headers = ['No', 'Tanggal', 'Jam', 'NIS', 'Nama Siswa', 'Kelas', 'Status Kehadiran'];
   const tglName = tgl || today();
   const klsName = kelas ? `_${kelas}` : '';
@@ -216,9 +228,32 @@ function exportExcel() {
     const titleRowIndices = [];
 
     listKelas.forEach((k, idx) => {
-      const classRows = rows
-        .filter(r => r.kelas === k)
-        .sort((a, b) => (a.tgl + a.jam).localeCompare(b.tgl + b.jam) || a.nama.localeCompare(b.nama));
+      // Data seluruh siswa di kelas ini (menyatu: hadir dan belum hadir)
+      const classStudents = filteredStudents.filter(s => s.kelas === k);
+      const classRows = classStudents.map(s => {
+        const rec = records.find(r => r.nis === s.nis && (tgl ? r.tgl === tgl : r.tgl === tAktif));
+        if (rec) {
+          return {
+            hadir: 1,
+            tgl: rec.tgl,
+            jam: rec.jam,
+            nis: s.nis,
+            nama: s.nama,
+            kelas: s.kelas,
+            status: formatStatus(rec.jam, rec.status)
+          };
+        } else {
+          return {
+            hadir: 0,
+            tgl: tAktif,
+            jam: '-',
+            nis: s.nis,
+            nama: s.nama,
+            kelas: s.kelas,
+            status: 'Belum Hadir'
+          };
+        }
+      }).sort((a, b) => (b.hadir - a.hadir) || (a.hadir ? a.jam.localeCompare(b.jam) : a.nama.localeCompare(b.nama)));
 
       if (idx > 0) {
         aoa.push([]); // baris kosong pemisah antar tabel
@@ -240,7 +275,7 @@ function exportExcel() {
           r.nis,
           r.nama,
           r.kelas,
-          formatStatus(r.jam, r.status)
+          r.status
         ]);
       });
     });
@@ -287,9 +322,31 @@ function exportExcel() {
   // Cadangan jika XLSX tidak tersedia
   const sections = [];
   listKelas.forEach(k => {
-    const classRows = rows
-      .filter(r => r.kelas === k)
-      .sort((a, b) => (a.tgl + a.jam).localeCompare(b.tgl + b.jam) || a.nama.localeCompare(b.nama));
+    const classStudents = filteredStudents.filter(s => s.kelas === k);
+    const classRows = classStudents.map(s => {
+      const rec = records.find(r => r.nis === s.nis && (tgl ? r.tgl === tgl : r.tgl === tAktif));
+      if (rec) {
+        return {
+          hadir: 1,
+          tgl: rec.tgl,
+          jam: rec.jam,
+          nis: s.nis,
+          nama: s.nama,
+          kelas: s.kelas,
+          status: formatStatus(rec.jam, rec.status)
+        };
+      } else {
+        return {
+          hadir: 0,
+          tgl: tAktif,
+          jam: '-',
+          nis: s.nis,
+          nama: s.nama,
+          kelas: s.kelas,
+          status: 'Belum Hadir'
+        };
+      }
+    }).sort((a, b) => (b.hadir - a.hadir) || (a.hadir ? a.jam.localeCompare(b.jam) : a.nama.localeCompare(b.nama)));
 
     const lines = [
       `"TABEL ABSENSI KELAS: ${k.replace(/"/g, '""')}"`,
@@ -301,7 +358,7 @@ function exportExcel() {
         `"${r.nis}"`,
         `"${r.nama.replace(/"/g, '""')}"`,
         `"${r.kelas}"`,
-        `"${formatStatus(r.jam, r.status)}"`
+        `"${r.status}"`
       ].join(','))
     ];
 

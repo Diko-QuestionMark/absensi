@@ -68,6 +68,12 @@
       <thead><tr><th>No</th><th class="c">Tanggal</th><th class="c">Jam</th><th class="c">NIS</th><th>Nama</th><th class="c">Kelas</th><th class="c">Status</th></tr></thead>
       <tbody id="tbRiwayat"></tbody></table></div>
   </div>
+  <div class="panel">
+    <h2>Siswa belum hadir (<span id="cBelum">0</span>)</h2>
+    <div class="twrap"><table>
+      <thead><tr><th>No</th><th class="c">NIS</th><th>Nama</th><th class="c">Kelas</th><th class="c">Status</th></tr></thead>
+      <tbody id="tbBelum"></tbody></table></div>
+  </div>
 </section>
 
 <section class="view" id="v-siswa">
@@ -77,7 +83,7 @@
   <div class="panel">
     <div class="filters"><label>Cari<input id="sQ" type="search" placeholder="Nama atau NIS"></label><label>Kelas<select id="sKelas"></select></label></div>
     <div class="twrap"><table>
-      <thead><tr><th>No</th><th class="c">NIS (isi barcode)</th><th>Nama</th><th class="c">Kelas</th><th class="r">Aksi</th></tr></thead>
+      <thead><tr><th>No</th><th class="c">NIS</th><th>Nama</th><th class="c">Kelas</th><th class="r">Aksi</th></tr></thead>
       <tbody id="tbSiswa"></tbody></table></div>
   </div>
   <p class="note">Data prototipe tersimpan di localStorage browser ini saja, bukan di server. Untuk dipakai di banyak perangkat, data perlu dipindah ke database.</p>

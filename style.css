@@ -555,6 +555,11 @@ td.empty {
   color: var(--warning)
 }
 
+.tag.b {
+  background: var(--danger-bg);
+  color: var(--danger)
+}
+
 .note {
   color: var(--text-muted);
   font-size: .9rem;
