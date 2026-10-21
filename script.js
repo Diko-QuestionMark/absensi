@@ -3,28 +3,50 @@ const NAMA_SEKOLAH = 'SMA YPK AIR KENANGA';
 const JAM_MASUK = '07:15:00'; // scan setelah jam ini berstatus "Terlambat"
 
 /* ===== Penyimpanan (localStorage, hanya untuk prototipe) ===== */
-const KEY = { s: 'absensi_siswa', r: 'absensi_catatan' };
+const KEY = { s: 'absensi_siswa', r: 'absensi_catatan', v: 'absensi_seed_ver' };
+const SEED_VER = 'v3_10kls_30siswa';
 const $ = s => document.querySelector(s);
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
 const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 function seed() {
-  const depan = ['Andi', 'Budi', 'Citra', 'Dewi', 'Eka', 'Fajar', 'Gita', 'Hadi', 'Indah', 'Joko', 'Kiki', 'Lina', 'Maya', 'Nanda', 'Oki', 'Putri', 'Rian', 'Sari', 'Tono', 'Ulfa'];
-  const belakang = ['Pratama', 'Wijaya', 'Lestari', 'Saputra', 'Hidayat', 'Kurnia', 'Permata', 'Santoso'];
-  const kelas = ['X-1', 'X-2', 'X-3', 'XI-1', 'XI-2', 'XI-3', 'XI-4', 'XII-1', 'XII-2', 'XII-3'];
+  const depan = [
+    'Aditya', 'Agus', 'Ahmad', 'Aisyah', 'Alif', 'Amanda', 'Andi', 'Anisa', 'Bayu', 'Bima',
+    'Budi', 'Citra', 'Danu', 'Dewi', 'Dimas', 'Dina', 'Doni', 'Eka', 'Fadhil', 'Fajar',
+    'Farhan', 'Gita', 'Gilang', 'Hadi', 'Hana', 'Ilham', 'Indah', 'Intan', 'Joko', 'Kartika',
+    'Kevin', 'Kiki', 'Lina', 'Maya', 'Muhammad', 'Nabila', 'Nanda', 'Nur', 'Oki', 'Putri',
+    'Rafi', 'Rahma', 'Rian', 'Rina', 'Rizky', 'Salsa', 'Sari', 'Taufik', 'Tono', 'Ulfa'
+  ];
+  const belakang = [
+    'Pratama', 'Wijaya', 'Lestari', 'Saputra', 'Hidayat', 'Kurnia', 'Permata', 'Santoso',
+    'Kusuma', 'Siregar', 'Wulandari', 'Setiawan', 'Ramadhan', 'Nugroho', 'Firmansyah', 'Utami',
+    'Puspita', 'Mahendra', 'Gunawan', 'Hakim'
+  ];
+  const kelas = ['10A', '10B', '10C', '10D', '11A', '11B', '11C', '12A', '12B', '12C'];
   const out = [];
   kelas.forEach((k, ci) => {
-    for (let j = 0; j < 6; j++) {
-      const i = ci * 6 + j;
-      out.push({ nis: '2026' + String(i + 1).padStart(3, '0'), nama: depan[i % 20] + ' ' + belakang[(i * 7 + ci) % 8], kelas: k });
+    for (let j = 0; j < 30; j++) {
+      const i = ci * 30 + j;
+      const d = depan[(i * 3 + j) % depan.length];
+      const b = belakang[(i * 7 + ci) % belakang.length];
+      out.push({
+        nis: '2026' + String(i + 1).padStart(3, '0'),
+        nama: `${d} ${b}`,
+        kelas: k
+      });
     }
   });
   return out;
 }
 
 let students = load(KEY.s, null);
-if (!students || !students.length) { students = seed(); save(KEY.s, students); }
+if (!students || !students.length || localStorage.getItem(KEY.v) !== SEED_VER) {
+  students = seed();
+  save(KEY.s, students);
+  save(KEY.r, []);
+  localStorage.setItem(KEY.v, SEED_VER);
+}
 let records = load(KEY.r, []);
 let route = 'scan';
 
@@ -432,7 +454,7 @@ $('#frm').addEventListener('submit', e => {
 });
 $('#reset').addEventListener('click', () => {
   if (confirm('Kembalikan data siswa contoh dan hapus semua riwayat absensi?')) {
-    students = seed(); records = []; save(KEY.s, students); save(KEY.r, records); renderSiswa(); toast('Data contoh dikembalikan');
+    students = seed(); records = []; save(KEY.s, students); save(KEY.r, records); localStorage.setItem(KEY.v, SEED_VER); renderSiswa(); toast('Data contoh dikembalikan');
   }
 });
 
