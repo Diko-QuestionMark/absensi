@@ -153,7 +153,18 @@ main {
   border-radius: .5rem;
   cursor: pointer;
   text-decoration: none;
-  display: inline-block
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  vertical-align: middle;
+}
+
+.btn-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  display: block;
 }
 
 .btn:hover {

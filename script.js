@@ -219,7 +219,6 @@ function renderDash() {
     : '<tr><td class="empty" colspan="5">Semua siswa sudah hadir.</td></tr>';
 }
 ['#fQ', '#fKelas', '#fTgl'].forEach(id => $(id).addEventListener('input', renderDash));
-$('#fAll').addEventListener('click', () => { $('#fTgl').value = ''; renderDash(); });
 
 function exportExcel() {
   const tgl = $('#fTgl').value;

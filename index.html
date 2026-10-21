@@ -49,7 +49,18 @@
 <section class="view" id="v-dashboard">
   <div class="head">
     <h1>Dashboard operator</h1>
-    <div class="actions"><button class="btn" id="btnExport" type="button">Ekspor Excel</button></div>
+    <div class="actions">
+      <button class="btn" id="btnExport" type="button">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+          <line x1="3" x2="21" y1="9" y2="9"></line>
+          <line x1="3" x2="21" y1="15" y2="15"></line>
+          <line x1="9" x2="9" y1="9" y2="21"></line>
+          <line x1="15" x2="15" y1="9" y2="21"></line>
+        </svg>
+        <span>Ekspor Excel</span>
+      </button>
+    </div>
   </div>
   <div class="stats">
     <div class="stat"><span>Jumlah siswa</span><b id="sTotal">0</b></div>
@@ -62,7 +73,6 @@
       <label>Cari<input id="fQ" type="search" placeholder="Nama atau NIS"></label>
       <label>Kelas<select id="fKelas"></select></label>
       <label>Tanggal<input id="fTgl" type="date"></label>
-      <button class="btn ghost" id="fAll" type="button">Semua tanggal</button>
     </div>
     <div class="twrap"><table>
       <thead><tr><th>No</th><th class="c">Tanggal</th><th class="c">Jam</th><th class="c">NIS</th><th>Nama</th><th class="c">Kelas</th><th class="c">Status</th></tr></thead>
@@ -77,9 +87,21 @@
 </section>
 
 <section class="view" id="v-siswa">
-  <div class="head"><h1>Manajemen siswa</h1>
-    <div class="actions"><button class="btn" id="add" type="button">Tambah siswa</button>
-      <button class="btn ghost" id="reset" type="button">Reset data contoh</button></div></div>
+  <div class="head">
+    <h1>Manajemen siswa</h1>
+    <div class="actions">
+      <button class="btn" id="add" type="button">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <line x1="19" y1="8" x2="19" y2="14"></line>
+          <line x1="22" y1="11" x2="16" y2="11"></line>
+        </svg>
+        <span>Tambah siswa</span>
+      </button>
+      <button class="btn ghost" id="reset" type="button">Reset data contoh</button>
+    </div>
+  </div>
   <div class="panel">
     <div class="filters"><label>Cari<input id="sQ" type="search" placeholder="Nama atau NIS"></label><label>Kelas<select id="sKelas"></select></label></div>
     <div class="twrap"><table>
